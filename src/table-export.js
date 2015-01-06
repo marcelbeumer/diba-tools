@@ -155,7 +155,7 @@
       record.cat = 'infra';
     }
 
-    if (/(^|\s)digitalocean($|\s)/.test(where)) {
+    if (/(^|\s)digitalocean.com($|\s)/.test(where)) {
       record.where = 'Digital Ocean';
       record.what = 'VPS';
       record.cat = 'infra';
