@@ -23,6 +23,8 @@
       setStyle(renderContainer, {
         'zIndex': 9999,
         'position': 'absolute',
+        'fontFamily': 'Menlo',
+        'font-size': '13px',
         'top': '0px',
         'left': '0px',
         'border': '1px solid black',
@@ -70,6 +72,7 @@
     return table;
   }
 
+
   function render(incoming, outgoing) {
     var c = getRenderContainer();
     c.innerHTML = '';
@@ -78,6 +81,107 @@
     c.appendChild(createHTML('<h1>Outgoing</h1>'));
     c.appendChild(renderRecords(outgoing));
   }
+
+
+  function filterRecord(record) {
+    var where = record.where.toLowerCase();
+    var what = record.what.toLowerCase();
+
+    if (/^lastschrift\s*/.test(what)) {
+      record.what = record.what.replace(/^[Ll]astschrift\s*/,'');
+    }
+
+    if (/^überweisung\s*/.test(what)) {
+      record.what = record.what.replace(/^[Üü]berweisung\s*/,'');
+    }
+
+    if (/^gutschrift\s*/.test(what)) {
+      record.what = record.what.replace(/^[Gg]utschrift\s*/,'');
+    }
+
+    if (/^EC [0-9A-Z]+ [0-9A-Z]+/.test(record.what)) {
+      record.what = '';
+    }
+
+    if (/^NR\d+\s+/.test(record.what)) {
+      record.what = record.what.replace(/^NR\d+\s+/, '');
+    }
+
+    if (/^(\d+\s)?ELV\d+/.test(record.what)) {
+      record.what = record.what.replace(/^(\d+\s)?ELV\d+\s+/, '');
+    }
+
+    if (/(^|\s)edeka($|\s)/.test(where)) {
+      record.where = 'Edeka';
+      record.what = '';
+      record.cat = 'groceries';
+    }
+
+    if (/(^|\s)penny($|\s)/.test(where)) {
+      record.where = 'Penny';
+      record.what = '';
+      record.cat = 'groceries';
+    }
+
+    if (/(^|\s)vollcorner($|\s)/.test(where)) {
+      record.where = 'Vollcorner';
+      record.what = '';
+      record.cat = 'groceries';
+    }
+
+    if (/(^|\s)rewe($|\s)/.test(where)) {
+      record.where = 'Rewe';
+      record.what = '';
+      record.cat = 'groceries';
+    }
+
+    if (/(^|\s)paypal europe s\.a\.r\.l\.($|\s)/.test(where)) {
+      record.where = 'Paypal';
+    }
+
+    if (/(^|\s)(swm)($|\s)/.test(where)) {
+      record.cat = 'utilities';
+    }
+
+    if (/(^|\s)google \*svcsapps($|\s)/.test(where)) {
+      record.where = 'Google Apps';
+      record.what =  'Google Apps for ' + (record.where.match(/google \*svcsapps\s*(.*)/) || [])[1];
+      record.cat = 'infra';
+    }
+
+    if (/(^|\s)amazon web services($|\s)/.test(where)) {
+      record.where = 'Amazon AWS';
+      record.what = 'Web Services';
+      record.cat = 'infra';
+    }
+
+    if (/(^|\s)digitalocean.com($|\s)/.test(where)) {
+      record.where = 'Digital Ocean';
+      record.what = 'VPS';
+      record.cat = 'infra';
+    }
+
+    if (/(^|\s)tchibo mobil($|\s)/.test(where)) {
+      record.where = 'Tchibo';
+      record.what = 'Phone';
+      record.cat = 'infra';
+    }
+
+    if (/(^|\s)scribd.com($|\s)/.test(where)) {
+      record.where = 'Scribd';
+      record.what = 'Subscription';
+      record.cat = 'media';
+    }
+
+    if (/(^|\s)techniker krankenkasse($|\s)/.test(where)) {
+      record.where = 'TK';
+      record.what = 'Health insurance';
+      record.cat = 'health';
+    }
+
+    return record;
+  }
+
 
   function getRecords() {
     var rows = slice.call(qsa('.kontoumsaetzte tbody tr'));
@@ -91,14 +195,15 @@
       var amount = parseFloat(row.querySelector('.umsatzbetrag')
         .innerText.replace(/\./g, '').replace(/,/g, '.'), 10);
 
-      records.push({
+      var record = filterRecord({
         date: row.querySelector('.buchungsdatum').innerText,
         where: row.querySelector('td:nth-of-type(2)').innerText,
-        what: '',
-        who: '',
+        what: row.querySelector('td:nth-of-type(3)').innerText,
         cat: '',
         amount: amount
       });
+
+      if (record) records.push(record);
     });
 
     return records;
